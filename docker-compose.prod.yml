@@ -1,0 +1,58 @@
+version: '3.8'
+
+
+services:
+  redis:
+    image: redis:7.0.11-alpine
+  api:
+    container_name: melorn
+    build:
+      context: ./melorn
+      dockerfile: Dockerfile.prod
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - melorn:/usr/src/app
+      - static_volume:/home/app/api/static
+      - media_volume:/home/app/api/media
+    expose:
+      - 8000
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - redis
+      - db
+  celery:
+    container_name: celery
+    build:
+      context: ./melorn
+      dockerfile: Dockerfile.prod
+    command: celery -A config worker --loglevel=info
+    volumes:
+      - melorn:/usr/src/app
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - redis
+      - db
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.prod.db
+  nginx:
+    build: ./nginx
+    ports:
+      - 80:80
+    volumes:
+    - static_volume:/home/app/api/static
+    - media_volume:/home/app/api/media
+    depends_on:
+      - api
+
+
+volumes:
+  postgres_data:
+  melorn:
+  static_volume:
+  media_volume:
