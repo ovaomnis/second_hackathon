@@ -44,11 +44,23 @@ services:
     build: ./nginx
     ports:
       - 80:80
+      - 443:443
     volumes:
     - static_volume:/home/app/api/static
     - media_volume:/home/app/api/media
+    - www-http:/var/www/certbot/
+    - ect-letsencrypt:/etc/nginx/ssl/
     depends_on:
       - api
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - www-http:/var/www/html/
+      - ect-letsencrypt:/etc/letsencrypt/
+    command: certonly --webroot --webroot-path=/var/www/html --email adilmarsov5@gmail.com --agree-tos --no-eff-email -d collecta.club
+    depends_on:
+      - nginx
+
 
 
 volumes:
@@ -56,3 +68,5 @@ volumes:
   melorn:
   static_volume:
   media_volume:
+  ect-letsencrypt:
+  www-http:
